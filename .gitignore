@@ -27,6 +27,6 @@ hs_err_pid*
 /.gradle/
 /.idea/
 /build.gradle
-/gradlew
-/gradlew.bat
-/settings.gradle
+/src/main/main.iml
+/Netty-Exercise.iml
+/target/

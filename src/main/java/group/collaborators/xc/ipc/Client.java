@@ -15,47 +15,50 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package group.xc.ipc;
+package group.collaborators.xc.ipc;
 
-import io.netty.bootstrap.ServerBootstrap;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.net.InetSocketAddress;
 
-public class Master {
+public class Client {
+  private final String host;
   private final int port;
 
-  public Master(int port) {
+  public Client(String host, int port) {
+    this.host = host;
     this.port = port;
   }
-
-  public static void main(String[] args) throws InterruptedException {
-    System.out.println("安分");
-    new Master(8090).start();
-  }
   public void start() throws InterruptedException {
-    final EchoServerHandler serverHandler = new EchoServerHandler();
     EventLoopGroup group = new NioEventLoopGroup();
+    Bootstrap bootstrap;
     try {
-      ServerBootstrap bootstrap = new ServerBootstrap();
+      bootstrap = new Bootstrap();
       bootstrap.group(group)
-      .channel(NioServerSocketChannel.class)
-      .localAddress(new InetSocketAddress(9999))
-      .childHandler(new ChannelInitializer<SocketChannel>() {
+      .channel(NioSocketChannel.class)
+      .remoteAddress(new InetSocketAddress(host,port))
+      .handler(new ChannelInitializer<SocketChannel>() {
         @Override
         protected void initChannel(SocketChannel ch) throws Exception {
-          ch.pipeline().addLast(serverHandler);
+          ch.pipeline().addLast().addLast(new EchoClientHandler());
         }
       });
-      ChannelFuture future = bootstrap.bind().sync();
-      future.channel().closeFuture().sync();
+    ChannelFuture future = bootstrap.connect().sync();
+    future.channel().closeFuture().sync();
     } finally {
       group.shutdownGracefully().sync();
     }
+  }
+
+  public static void main(String[] args) throws InterruptedException {
+    String host = "127.0.0.1";
+    int port = 9999;
+    new Client(host, port).start();
   }
 }
