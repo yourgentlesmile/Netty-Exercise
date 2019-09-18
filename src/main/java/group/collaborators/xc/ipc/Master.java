@@ -35,7 +35,7 @@ public class Master {
   }
 
   public static void main(String[] args) throws InterruptedException {
-    System.out.println("安分");
+    System.out.println("Running~");
     new Master(8090).start();
   }
   public void start() throws InterruptedException {
@@ -45,7 +45,7 @@ public class Master {
       ServerBootstrap bootstrap = new ServerBootstrap();
       bootstrap.group(group)
       .channel(NioServerSocketChannel.class)
-      .localAddress(new InetSocketAddress(9999))
+      .localAddress(new InetSocketAddress(port))
       .childHandler(new ChannelInitializer<SocketChannel>() {
         @Override
         protected void initChannel(SocketChannel ch) throws Exception {

@@ -18,8 +18,6 @@
 package group.collaborators.xc.ipc;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -29,19 +27,32 @@ import io.netty.util.CharsetUtil;
 public class EchoServerHandler extends ChannelInboundHandlerAdapter {
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    /**todo 此处，由于客户端在建立连接的时候会发送一条无格式的消息，所以在解析的时候会出错。
+     * todo 因此，进阶处理的时候要首先处理首次请求的数据包
+     */
     ByteBuf in = (ByteBuf) msg;
-    System.out.println("Server received: " + in.toString(CharsetUtil.UTF_8));
-    ctx.write(in);
+    in.skipBytes(4);
+    int version = in.readByte();
+    int usernameLength = in.readInt();
+    String username = String.valueOf(in.readCharSequence(usernameLength, CharsetUtil.UTF_8 ));
+    int msgLength = in.readInt();
+    String msgs = String.valueOf(in.readCharSequence(msgLength,CharsetUtil.UTF_8));
+    System.out.println("version : " + version + "  usernameLength : " + usernameLength);
+    System.out.println("username : " + username + "  msgLength : " + msgLength);
+    System.out.println("msgs : " + username);
+//    ctx.write(in);
   }
 
   @Override
   public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-    ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+    //添加一个listener(ChannelFutureListener.CLOSE) 当writeAndFlush完成后，将channel关闭
+//    ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+//    System.out.println("read complete");
   }
 
   @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
     cause.printStackTrace();
-    ctx.close();
+//    ctx.close();
   }
 }

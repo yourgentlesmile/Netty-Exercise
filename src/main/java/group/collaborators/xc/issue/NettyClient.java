@@ -17,6 +17,8 @@
  */
 package group.collaborators.xc.issue;
 
+import group.collaborators.xc.issue.util.UserMsgPacketFactory;
+import group.collaborators.xc.issue.util.UserPacketGenerator;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -24,12 +26,18 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 
+/**
+ * Netty客户端引导类
+ */
 public class NettyClient {
   private final String host;
   private final int port;
+  private final String LEAVE = "EXIT";
 
   public NettyClient(String host, int port) {
     this.host = host;
@@ -37,7 +45,7 @@ public class NettyClient {
   }
   public static void main(String[] args) {
     String host = "127.0.0.1";
-    int port = 8890;
+    int port = 8090;
     try {
       new NettyClient(host,port).start();
     } catch (InterruptedException e) {
@@ -55,13 +63,37 @@ public class NettyClient {
       .handler(new ChannelInitializer<SocketChannel>() {
         @Override
         protected void initChannel(SocketChannel ch) throws Exception {
-          ch.pipeline().addLast();
+          ch.pipeline().addLast(new NettyClientRequestHandler());
         }
       });
-      ChannelFuture future = bootstrap.bind().sync();
-      future.channel().closeFuture().sync();
+      ChannelFuture future = bootstrap.connect().sync();
+      letsChat(future);
     } finally {
       group.shutdownGracefully().sync();
     }
+  }
+  public void letsChat(ChannelFuture future) {
+    System.out.print("Let us know your name : ");
+    BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+    UserPacketGenerator maker;
+    try {
+      String username = reader.readLine();
+      maker = UserMsgPacketFactory.getUserPacketGenerator(username);
+      System.out.println("ok~ let's chat");
+      while (true) {
+        String msg = reader.readLine();
+        if(msg.toUpperCase().equals(LEAVE)) {
+          future.channel().writeAndFlush(maker.leave());
+          future.channel().closeFuture().sync();
+          break;
+        }
+        future.channel().writeAndFlush(maker.chatMsg(msg));
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+    System.out.println("good bye~");
   }
 }
