@@ -31,9 +31,17 @@ public class EchoServerHandler extends ChannelInboundHandlerAdapter {
         int messageLen = in.readInt();
         System.out.println("magicBlock: " + magicBlock);
         System.out.println("userNameLength: " + userNameLen + "  messageLength: " + messageLen);
-        ctx.writeAndFlush(in);
-    }
+        channelGroup.forEach(channel -> {
+//            ctx.channel().writeAndFlush(in);
+            if(ctx.channel() != channel){
+                channel.writeAndFlush(in);
+//                System.out.println("send to client："+ctx.channel().remoteAddress()+",msg:"+msg+"\n");
+            }else {
+                channel.writeAndFlush(in);
+            }
+        });
 
+    }
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
         ctx.writeAndFlush(Unpooled.EMPTY_BUFFER);
