@@ -33,6 +33,8 @@ public class EchoServerHandler extends ChannelInboundHandlerAdapter {
         System.out.println("userNameLength: " + userNameLen + "  messageLength: " + messageLen);
         channelGroup.forEach(channel -> {
 //            ctx.channel().writeAndFlush(in);
+            //每次调用 retain()方法， 它的引用就加 1  否则会报io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1错误
+            in.retain();
             if(ctx.channel() != channel){
                 channel.writeAndFlush(in);
 //                System.out.println("send to client："+ctx.channel().remoteAddress()+",msg:"+msg+"\n");
