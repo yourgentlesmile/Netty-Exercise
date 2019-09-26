@@ -8,5 +8,5 @@ public class MessageDto {
     public static byte[] MAGICBLOCK = new byte[]{'P','F','L','O'};
     public static final String USERNAME = "";
     public static final String MESSAGE = "";
-    public static final String VERSION = "v1.0";
+    public static final int VERSION = 1;
 }

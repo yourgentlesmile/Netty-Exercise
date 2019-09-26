@@ -27,20 +27,18 @@ public class EchoServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ByteBuf in = (ByteBuf) msg;
-        // 此副本用于read操作
-        ByteBuf byteBufForRead = in.copy();
         System.out.println("EchoServer received:" + ctx.channel().remoteAddress().toString().substring(1) + " message -> " + in.toString(CharsetUtil.UTF_8));
         if(atomicInteger.intValue() <= 1){
             atomicInteger.incrementAndGet();
             return;
         }
-        byteBufForRead.skipBytes(4);
-        int version = byteBufForRead.readInt();
-        String ver = String.valueOf(byteBufForRead.readCharSequence(version, CharsetUtil.UTF_8 ));
-        int userNameLen = byteBufForRead.readInt();
-        String userName = String.valueOf(byteBufForRead.readCharSequence(userNameLen, CharsetUtil.UTF_8 ));
-        long messageLen = byteBufForRead.readLong();
-//        String msgs = String.valueOf(byteBufForRead.readCharSequence(messageLen,CharsetUtil.UTF_8));
+        in.skipBytes(4);
+        int version = in.readInt();
+        String ver = String.valueOf(in.readCharSequence(version, CharsetUtil.UTF_8 ));
+        int userNameLen = in.readInt();
+        String userName = String.valueOf(in.readCharSequence(userNameLen, CharsetUtil.UTF_8 ));
+        long messageLen = in.readLong();
+//        String msgs = String.valueOf(in.readCharSequence(messageLen,CharsetUtil.UTF_8));
         System.out.println("version length: " + version + " version：" + ver);
         System.out.println("userName length: " + userNameLen + " userName: " + userName);
         System.out.println("message length: " + messageLen );
