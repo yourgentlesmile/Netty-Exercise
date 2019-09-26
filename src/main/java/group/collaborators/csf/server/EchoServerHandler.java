@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author orangeC
@@ -22,27 +23,32 @@ public class EchoServerHandler extends ChannelInboundHandlerAdapter {
     private static ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
     private static Map<ChannelId, String> channelMapAll = new HashMap<ChannelId, String>();
     private static Map<ChannelId, String> channelMapExp = new HashMap<ChannelId, String>();
+    private AtomicInteger atomicInteger = new AtomicInteger(0);
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ByteBuf in = (ByteBuf) msg;
+        // 此副本用于read操作
+        ByteBuf byteBufForRead = in.copy();
         System.out.println("EchoServer received:" + ctx.channel().remoteAddress().toString().substring(1) + " message -> " + in.toString(CharsetUtil.UTF_8));
-        byte magicBlock = in.readByte();
-        int userNameLen = in.readInt();
-        int messageLen = in.readInt();
-        System.out.println("magicBlock: " + magicBlock);
-        System.out.println("userNameLength: " + userNameLen + "  messageLength: " + messageLen);
+        if(atomicInteger.intValue() <= 1){
+            atomicInteger.incrementAndGet();
+            return;
+        }
+        byteBufForRead.skipBytes(4);
+        int version = byteBufForRead.readInt();
+        String ver = String.valueOf(byteBufForRead.readCharSequence(version, CharsetUtil.UTF_8 ));
+        int userNameLen = byteBufForRead.readInt();
+        String userName = String.valueOf(byteBufForRead.readCharSequence(userNameLen, CharsetUtil.UTF_8 ));
+        long messageLen = byteBufForRead.readLong();
+//        String msgs = String.valueOf(byteBufForRead.readCharSequence(messageLen,CharsetUtil.UTF_8));
+        System.out.println("version length: " + version + " version：" + ver);
+        System.out.println("userName length: " + userNameLen + " userName: " + userName);
+        System.out.println("message length: " + messageLen );
         channelGroup.forEach(channel -> {
-//            ctx.channel().writeAndFlush(in);
-            //每次调用 retain()方法， 它的引用就加 1  否则会报io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1错误
-            in.retain();
-            if(ctx.channel() != channel){
-                channel.writeAndFlush(in);
-//                System.out.println("send to client："+ctx.channel().remoteAddress()+",msg:"+msg+"\n");
-            }else {
-                channel.writeAndFlush(in);
-            }
+            // 此副本用于write操作
+            ByteBuf byteBuf = in.copy();
+            channel.writeAndFlush(byteBuf);
         });
-
     }
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
@@ -61,8 +67,10 @@ public class EchoServerHandler extends ChannelInboundHandlerAdapter {
         Channel channel = ctx.channel();
         channelMapAll.put(channel.id(),channel.remoteAddress().toString());
         if(channelGroup.size() == 1){
+            atomicInteger.incrementAndGet();
             System.out.println(String.format("welcome %s  online,you are currently %s client" , channel.remoteAddress(), channelGroup.size()));
         }else if(channelGroup.size() > 1){
+            atomicInteger.decrementAndGet();
             Set<ChannelId> channelIds = channelMapAll.keySet();
             for(ChannelId channelId: channelIds){
                 if(channelId != channel.id()){

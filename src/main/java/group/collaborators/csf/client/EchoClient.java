@@ -63,15 +63,20 @@ public class EchoClient {
         System.out.println("start sendMessage! what's your name: ");
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
         try {
-            ByteBuf magicBlock = Unpooled.copiedBuffer(MessageDto.MAGICBLOCK);
             String userName = bufferedReader.readLine();
-            ByteBuf uName = Unpooled.buffer(userName.length() + 4).writeInt(userName.length());
-            uName.writeCharSequence(userName, CharsetUtil.UTF_8);
             System.out.println("Please enter the message you want to send: ");
             while (true){
+                // ByteBuf对象初始化引用计数为1，用完之后会release掉，之后再访问了计数器为0就会报错io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1
+                ByteBuf magicBlock = Unpooled.copiedBuffer(MessageDto.MAGICBLOCK);
+                ByteBuf version = Unpooled.buffer(1).writeInt(MessageDto.VERSION.length());
+                version.writeCharSequence(MessageDto.VERSION,CharsetUtil.UTF_8);
+                ByteBuf uName = Unpooled.buffer(4).writeInt(userName.length());
+                uName.writeCharSequence(userName, CharsetUtil.UTF_8);
+//                System.out.println(uName.readInt());
                 String message = bufferedReader.readLine();
-                ByteBuf msg = Unpooled.buffer(message.length() + 8).writeInt(message.length());
+                ByteBuf msg = Unpooled.buffer(8).writeLong(message.length());
                 msg.writeCharSequence(message, CharsetUtil.UTF_8);
+//                System.out.println(msg.readInt());
                 if(StringUtils.equals(message,EXIT)){
                     channel.writeAndFlush("exit! welcome back next time");
                     System.out.println("exit! welcome back next time");
@@ -80,8 +85,9 @@ public class EchoClient {
                 }
                 CompositeByteBuf compositeByteBuf = Unpooled.compositeBuffer();
                 compositeByteBuf.addComponents(true,magicBlock);
-                compositeByteBuf.addComponents(true,msg);
+                compositeByteBuf.addComponents(true,version);
                 compositeByteBuf.addComponents(true,uName);
+                compositeByteBuf.addComponents(true,msg);
                 channel.writeAndFlush(compositeByteBuf);
             }
         } catch (IOException e) {

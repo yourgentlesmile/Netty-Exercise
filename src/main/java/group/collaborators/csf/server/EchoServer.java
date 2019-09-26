@@ -32,7 +32,8 @@ public class EchoServer {
         EventLoopGroup eventLoopGroup = new NioEventLoopGroup();
         try {
             ServerBootstrap serverBootstrap = new ServerBootstrap();
-            serverBootstrap.group(eventLoopGroup).channel(NioServerSocketChannel.class).localAddress(new InetSocketAddress(8888)).childHandler(new ChannelInitializer<SocketChannel>() {
+            serverBootstrap.group(eventLoopGroup).channel(NioServerSocketChannel.class).localAddress(new InetSocketAddress(8888)).
+                    childHandler(new ChannelInitializer<SocketChannel>() {
                 // 当一个新的连接被接受时，一个新的channel被创建，将echoServerHandler实例添加至pipeline（实例链）中，此echoServerHandler会收到有关客户端入站消息的通知
                 @Override
                 protected void initChannel(SocketChannel socketChannel){
