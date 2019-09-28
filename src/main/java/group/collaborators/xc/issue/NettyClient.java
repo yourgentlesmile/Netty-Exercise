@@ -63,7 +63,7 @@ public class NettyClient {
       .handler(new ChannelInitializer<SocketChannel>() {
         @Override
         protected void initChannel(SocketChannel ch) throws Exception {
-          ch.pipeline().addLast(new NettyClientRequestHandler());
+          ch.pipeline().addLast("processMsg",new NettyClientRequestHandler());
         }
       });
       ChannelFuture future = bootstrap.connect().sync();
