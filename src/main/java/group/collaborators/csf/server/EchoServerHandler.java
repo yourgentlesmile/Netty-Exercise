@@ -21,8 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @ChannelHandler.Sharable
 public class EchoServerHandler extends ChannelInboundHandlerAdapter {
     private static ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-    private static Map<ChannelId, String> channelMapAll = new HashMap<ChannelId, String>();
-    private static Map<ChannelId, String> channelMapExp = new HashMap<ChannelId, String>();
     private AtomicInteger atomicInteger = new AtomicInteger(0);
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -63,23 +61,20 @@ public class EchoServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Channel channel = ctx.channel();
-        channelMapAll.put(channel.id(),channel.remoteAddress().toString());
+//        channelMapAll.put(channel.id(),channel.remoteAddress().toString());
         if(channelGroup.size() == 1){
             atomicInteger.incrementAndGet();
             System.out.println(String.format("welcome %s  online,you are currently %s client" , channel.remoteAddress(), channelGroup.size()));
         }else if(channelGroup.size() > 1){
             atomicInteger.decrementAndGet();
-            Set<ChannelId> channelIds = channelMapAll.keySet();
-            for(ChannelId channelId: channelIds){
-                if(channelId != channel.id()){
-                    channelMapExp.put(channelId,channelMapAll.get(channelId));
-                }
-            }
-            Iterator<Map.Entry<ChannelId, String>> iterators = channelMapExp.entrySet().iterator();
             System.out.println(String.format("welcome %s  online,you are currently %s client,others:" , channel.remoteAddress(), channelGroup.size()));
-            while(iterators.hasNext()){
-                Map.Entry<ChannelId, String> entry = iterators.next();
-                System.out.println("client -> " + entry.getValue());
+            Iterator<Channel> iterator = channelGroup.iterator();
+            while(iterator.hasNext()){
+                Channel channelId = iterator.next();
+                if(channelId.id() != channel.id()){
+//                    channelMapExp.put(channelId.id(),channelId.remoteAddress().toString());
+                    System.out.println("client -> " + channelId.remoteAddress().toString());
+                }
             }
         }
     }
@@ -89,7 +84,7 @@ public class EchoServerHandler extends ChannelInboundHandlerAdapter {
         Channel channel = ctx.channel();
         channelGroup.writeAndFlush(" server -> " +channel.remoteAddress() +" leave\n");
         // 客户端断开连接，删除
-        channelMapAll.remove(channel.id());
+//        channelMapAll.remove(channel.id());
         System.out.println("current connection：" + channelGroup.size());
         //channelGroup.remove(channel);
     }
